@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:RNFuncAndClosure.playground">
+   </FileRef>
+   <FileRef
       location = "group:RNSelect.playground">
    </FileRef>
 </Workspace>
