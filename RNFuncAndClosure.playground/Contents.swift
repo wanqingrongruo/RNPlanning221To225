@@ -1,6 +1,7 @@
 //: Playground - noun: a place where people can play
 
 import UIKit
+import Foundation
 
 var str = "Hello, How to use func and closure"
 
@@ -53,7 +54,7 @@ var res = 0
 mulForInout(result: &res, 2,3,4,5)
 res
 
-// ***************
+// ***************************************************
 
 // 函数定义变量
 func mulForType(m: Int, n: Int) -> Int {
@@ -117,7 +118,7 @@ let counter04 = makeCounter02()
 (0...2).forEach{_ in print(counter03())} // 1 2 3
 (0...5).forEach{_ in print(counter04())} // 1 2 3 4 5 6
 
-// ***************
+// ***************************************************
 // 归并排序
 extension Array where Element: Comparable {
     
@@ -166,7 +167,7 @@ extension Array where Element: Comparable {
         
         func mergeAboutLocalFunction(_ begin: Index, _ mid: Index, _ end: Index) {
             
-            temp.removeAll(keepingCapacity: true) // 情况数组,并维持空间大小不变
+            temp.removeAll(keepingCapacity: true) // 保留数组空间
             
             var i = begin
             var j = mid
@@ -206,4 +207,55 @@ var numbersss = [2,1,4,3,9,5]
 numbersss.mergeSort(numbersss.startIndex, numbersss.endIndex)
 numbersss.mergeSortAboutLocalFunction(numbersss.startIndex, numbersss.endIndex)
 
-		
+
+// ***************************************************
+
+// OC 中水土不服的运行时特性
+final class Episode: NSObject {
+    var title: String
+    var type: String
+    var length: Int
+    
+    override var description: String {
+        return title + "\t" + type + "\t" + String(length)
+    }
+    
+    init(title: String, type: String, length: Int) {
+        self.title = title
+        self.type = type
+        self.length = length
+    }
+}
+
+let episodes = [
+    Episode(title: "title 1", type: "Free", length: 520),
+    Episode(title: "title 4", type: "Paid", length: 500),
+    Episode(title: "title 2", type: "Free", length: 330),
+    Episode(title: "title 5", type: "Paid", length: 260),
+    Episode(title: "title 3", type: "Free", length: 240),
+    Episode(title: "title 6", type: "Paid", length: 390),
+]
+
+// key: 表示要排序的属性
+// ascending: 表示是否按升序排列
+// selector: 表示要进行比较的方法
+let typeDescriptor = NSSortDescriptor(key: #keyPath(Episode.type), ascending: true, selector: #selector(NSString.localizedCompare(_:)))
+
+let lengthDescriptor = NSSortDescriptor(key: #keyPath(Episode.length), ascending: true)
+
+// 先按 type 升序, 再按 length 升序
+let descriptors = [typeDescriptor, lengthDescriptor]
+
+let sortedEpisodes = (episodes as NSArray).sortedArray(using: descriptors)
+sortedEpisodes.forEach{print($0 as! Episode)}
+
+
+// ***************************************************
+
+// 通过类型系统模拟 OC 的运行时表达
+
+//// 抽象要比较的属性 以及 比较规则
+//func makeDescription<Key, Value>(key: @escaping(Key) -> Value, _ isAscending: @escaping (Value, Value) -> Bool) -> SortDescriptor<Key>{
+//    return { isAscending(key($0), key($1))}
+//    
+//}
