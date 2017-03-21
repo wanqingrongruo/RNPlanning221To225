@@ -255,7 +255,42 @@ sortedEpisodes.forEach{print($0 as! Episode)}
 // 通过类型系统模拟 OC 的运行时表达
 
 //// 抽象要比较的属性 以及 比较规则
-//func makeDescription<Key, Value>(key: @escaping(Key) -> Value, _ isAscending: @escaping (Value, Value) -> Bool) -> SortDescriptor<Key>{
-//    return { isAscending(key($0), key($1))}
-//    
-//}
+
+typealias SortDescriptor<T> = (T, T) -> Bool
+
+// Key: 处理的对象
+// Value: 要排序的类型
+// 我们使用@escaping修饰了用于获取Value以及排序的函数参数，这是因为在我们返回的函数里，使用了key以及isAscending，这两个函数都逃离了makeDescriptor作用域，而Swift 3里，作为参数的函数类型默认是不能逃离的，因此我们需要明确告知编译器这种情况
+func makeDescription<Key, Value>(key: @escaping(Key) -> Value, _ isAscending: @escaping (Value, Value) -> Bool) -> SortDescriptor<Key>{
+    return { isAscending(key($0), key($1))}
+    
+}
+
+let typeDes: SortDescriptor<Episode> = makeDescription(key: {$0.type}) { $0.localizedCompare($1) == .orderedAscending}
+let lengthDes: SortDescriptor<Episode> = makeDescription(key: {$0.length}, <)
+
+episodes.sorted(by: typeDes).forEach{ print($0)}
+
+// 合并多个排序条件
+
+func combine<T>(rules: [SortDescriptor<T>]) -> SortDescriptor<T> {
+    
+    return { l,r in
+        for rule in rules {
+            if rule(l, r) {
+                return true
+            }
+            if rule(r, l){
+                return false
+            }
+        }
+        
+        return false
+    }
+}
+
+let mixDes = combine(rules: [typeDes, lengthDes])
+episodes.sorted(by: mixDes).forEach { print($0) }
+
+
+
