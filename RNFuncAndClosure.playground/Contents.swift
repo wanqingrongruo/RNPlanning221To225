@@ -266,8 +266,27 @@ func makeDescription<Key, Value>(key: @escaping(Key) -> Value, _ isAscending: @e
     
 }
 
+// 为optional类型“提升”比较函数
+func shift<T: Comparable>(
+    _ compare: @escaping (T, T) -> Bool) -> (T?, T?) -> Bool {
+    return { l, r in
+        switch (l, r) {
+        case (nil, nil):
+            return false
+        case (nil, _):
+            return false
+        case (_, nil):
+            return true
+        case let (l?, r?):
+            return compare(l, r)
+        default:
+            fatalError()
+        }
+    }
+}
+
 let typeDes: SortDescriptor<Episode> = makeDescription(key: {$0.type}) { $0.localizedCompare($1) == .orderedAscending}
-let lengthDes: SortDescriptor<Episode> = makeDescription(key: {$0.length}, <)
+let lengthDes: SortDescriptor<Episode> = makeDescription(key: {$0.length}, shift(<))
 
 episodes.sorted(by: typeDes).forEach{ print($0)}
 
@@ -293,4 +312,86 @@ let mixDes = combine(rules: [typeDes, lengthDes])
 episodes.sorted(by: mixDes).forEach { print($0) }
 
 
+// 定义操作符
+// LogicalDisjunctionPrecedence 优先级
+// 如果我们不指定优先级，Swift会为它设置默认的DefaultPrecedence。
+infix operator +++: LogicalDisjunctionPrecedence
 
+func +++<T>(l: @escaping SortDescriptor<T>, r: @escaping SortDescriptor<T>) -> SortDescriptor<T> {
+    return {
+        if l($0, $1) {
+            return true
+        }
+        
+        if l($1, $0) {
+            return false
+        }
+        
+        // $0 and $1 is the same, try the second descriptor
+        if r($0, $1) {
+            return true
+        }
+        
+        return false
+    }
+}
+
+episodes.sorted(by: typeDes +++ lengthDes).forEach { print($0) }
+
+
+// ***************************************************
+
+// 为什么 delegate 模式不适用于 struct
+
+// ***************************************************
+
+// 传递引用参数
+// 可以把UnsafeMutablePointer<Int>理解为C语言中的Int *
+
+
+func incrementByReference(_ pointer: UnsafeMutablePointer<Int>) {
+    pointer.pointee += 1 // 地址加一
+}
+
+var i = 0
+incrementByReference(&i)
+
+// 不要让接受指针参数的函数返回另外一个函数!!!!
+
+struct color {
+    var r: Int
+    var g: Int
+    var b: Int
+    
+    // rgb 转 16进制
+    var hex:Int {
+        // << 向左移位移位(字节为单位)
+        return r << 16 + g << 8 + b
+    }
+}
+
+
+let c = color(r: 255, g: 255, b: 255)
+String(c.hex, radix: 16) //　转成字符串 -- 10进制转16进制
+
+// ***************************************************
+
+// 把参数自动转化为 closure
+// @autoclosure 修饰参数
+
+func logicAdd(_ l :Bool, _ r: @autoclosure () -> Bool) -> Bool {
+    
+    guard l else {
+        return false
+    }
+    
+    // 第一个条件成立才会继续判断第二个条件 => short circuit <= && ||
+    return r()
+}
+
+let nums: [Int] = []
+
+logicAdd(!nums.isEmpty, nums[0] > 0)
+
+// capture list 
+// [weak counter]
